@@ -17,6 +17,16 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 RectangleArena {
+  floorAppearance PBRAppearance {
+    baseColor 1 1 1 
+    roughness 1
+    metalness 0
+  }
+  wallAppearance PBRAppearance {
+    baseColor 0 0 0
+    roughness 1
+    metalness 0
+  }
 }
 E-puck {
   hidden position_0_0 460.5934758246992
@@ -277,6 +287,9 @@ Solid {
   children [
     DEF wall2 Shape {
       appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
       }
       geometry Box {
         size 0.006 0.8 0.1
@@ -292,6 +305,9 @@ Solid {
   children [
     DEF wall1 Shape {
       appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
       }
       geometry Box {
         size 0.006 0.8 0.1
