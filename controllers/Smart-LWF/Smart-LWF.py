@@ -1,40 +1,65 @@
 """
 Enhanced E-puck maze solver controller with intelligent navigation
+This controller implements a wall-following algorithm with advanced features:
+- Wall detection and avoidance
+- Corner detection and escape
+- Intersection handling
+- Dead-end detection
+- Maze completion tracking
 """
 
 from controller import Robot, Motor, DistanceSensor
 import math
 
-# Time step in milliseconds
+# Time step represents the basic control cycle duration in milliseconds
+# 64ms provides good balance between responsiveness and processing time
 TIME_STEP = 64
 
-# Constants for the robot's behavior
-MAX_SPEED = 6.28  # Maximum wheel speed
-WALL_THRESHOLD = 80  # Reduced threshold for wall detection
-CLOSE_WALL_THRESHOLD = 130  # Adjusted threshold for very close walls
-FRONT_WALL_THRESHOLD = 90  # Adjusted front wall threshold
-CORNER_THRESHOLD = 100  # Lowered threshold for corner detection
+# Robot behavior constants
+# Maximum wheel speed (rad/s) - Matches E-puck's physical limits
+MAX_SPEED = 6.28
+TURN_SPEED = 5.0    # Reduced speed for turns (80% of max) for better control
+NORMAL_SPEED = 5.5  # Standard forward speed (87% of max) for stable movement
 
-# Distances for determining dead ends and intersections
-DEAD_END_THRESHOLD = 3  # Number of walls to consider as dead end
-INTERSECTION_THRESHOLD = 1  # Maximum number of walls to consider as intersection
+# Sensor threshold values (0-1000 range for proximity sensors)
+# Distance to detect normal walls (lower = earlier detection)
+WALL_THRESHOLD = 80
+# Distance for very close walls (higher = more cautious)
+CLOSE_WALL_THRESHOLD = 130
+# Front wall detection (specific for forward collision avoidance)
+FRONT_WALL_THRESHOLD = 90
+# Corner detection sensitivity (balance between early/late detection)
+CORNER_THRESHOLD = 100
 
-# For tracking visited locations
-GRID_SIZE = 0.1  # Size of each grid cell in meters
-LOCATION_TOLERANCE = 0.05  # Tolerance for considering same location
+# Navigation parameters
+# Number of walls that indicate a dead end (3 = U-turn needed)
+DEAD_END_THRESHOLD = 3
+# Max walls to consider as intersection (1 = open paths available)
+INTERSECTION_THRESHOLD = 1
 
-# For stuck detection
-STUCK_DISTANCE_THRESHOLD = 0.003  # 3mm - even more sensitive stuck detection
-STUCK_TIME_THRESHOLD = 20  # Detect stuck condition faster
+# Position tracking parameters
+GRID_SIZE = 0.1           # Size of each virtual grid cell (10cm squares)
+LOCATION_TOLERANCE = 0.05  # Tolerance for position matching (5cm)
 
-# Maze completion detection
-# Number of unique cells to visit before considering maze solved
+# Stuck detection parameters
+STUCK_DISTANCE_THRESHOLD = 0.003  # Minimum movement expected (3mm)
+STUCK_TIME_THRESHOLD = 20        # Time steps before considering robot stuck
+
+# Maze completion criteria
+# Number of unique cells to consider maze explored
 COMPLETION_VISIT_THRESHOLD = 50
-# Distance from center to consider as outer perimeter
+# Distance from center to define maze boundary (50cm)
 OUTER_PERIMETER_DISTANCE = 0.5
 
 
 def run_robot(robot):
+  """
+  Main robot control function implementing the maze solving algorithm.
+  Uses a combination of wall following and intelligent navigation strategies.
+
+  Args:
+      robot: Webots Robot object representing the E-puck robot
+  """
   # Initialize devices
   left_motor = robot.getDevice("left wheel motor")
   right_motor = robot.getDevice("right wheel motor")
@@ -78,14 +103,13 @@ def run_robot(robot):
   prev_left_vel = 0
   prev_right_vel = 0
 
-  # State variables
-  # Can be FOLLOW_LEFT_WALL, FOLLOW_RIGHT_WALL, ESCAPE_CORNER, CIRCLE_PERIMETER
-  state = "FOLLOW_LEFT_WALL"
-  stuck_counter = 0
-  last_position = [0, 0]
-  escape_mode_counter = 0
-  rotation_direction = 1  # 1 for right, -1 for left
-  maze_completed = False
+  # State machine variables
+  state = "FOLLOW_LEFT_WALL"  # Initial strategy: follow left wall
+  stuck_counter = 0           # Tracks consecutive steps with minimal movement
+  last_position = [0, 0]      # For stuck detection
+  escape_mode_counter = 0      # Duration of corner escape maneuvers
+  rotation_direction = 1       # 1 = right turn, -1 = left turn
+  maze_completed = False      # Tracks overall progress
   circle_direction = "CLOCKWISE"  # Direction to circle the maze after completion
   perimeter_follow_time = 0  # Time counter for outer perimeter following
 
@@ -276,11 +300,11 @@ def run_robot(robot):
     elif state == "ESCAPE_CORNER":
       # Execute an aggressive turn to escape corner or stuck situation
       if rotation_direction == 1:  # Turn right
-        left_speed = MAX_SPEED * 1.1  # Slightly higher speed for faster turn
-        right_speed = -MAX_SPEED * 0.8
+        left_speed = TURN_SPEED
+        right_speed = -TURN_SPEED * 0.8
       else:  # Turn left
-        left_speed = -MAX_SPEED * 0.8
-        right_speed = MAX_SPEED * 1.1  # Slightly higher speed for faster turn
+        left_speed = -TURN_SPEED * 0.8
+        right_speed = TURN_SPEED
     elif is_dead_end:
       # At a dead end, make a U-turn - more aggressive than before
       print("Dead end detected - executing U-turn")
@@ -362,6 +386,10 @@ def run_robot(robot):
           # Follow right wall
           left_speed = MAX_SPEED * 0.9  # Slightly reduced speed for better control
           right_speed = MAX_SPEED * 0.9
+
+    # Ensure all motor speeds are capped at MAX_SPEED
+    left_speed = min(max(-MAX_SPEED, left_speed), MAX_SPEED)
+    right_speed = min(max(-MAX_SPEED, right_speed), MAX_SPEED)
 
     # Set motor velocities
     left_motor.setVelocity(left_speed)

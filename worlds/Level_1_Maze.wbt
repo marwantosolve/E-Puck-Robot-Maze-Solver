@@ -8,7 +8,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5364875243465286 0.5358176598910702 0.6519820331645576 1.9872062349847905
+  orientation -0.5417149301359702 0.5437504613986117 0.6409995087334918 1.9981434029908038
   position 0.02044760151507624 -0.39674516324512393 2.344375380269661
 }
 TexturedBackground {
@@ -34,7 +34,7 @@ E-puck {
   hidden rotation_2 0 1 0 6.061298512000083
   translation 0 -0.4 -2.94696e-05
   rotation 0.0027709279685172138 0.0011688477489684881 0.9999954778663417 1.55555
-  controller "Epuck-Maze-Solver-V2"
+  controller "Smart-LWF"
 }
 Solid {
   translation 0.074 0.083 0.0498106
